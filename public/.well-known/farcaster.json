@@ -1,0 +1,15 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEzNTAzMzgsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg4ZGE5RTIxMzA3YzFFZEE1RjlEMDYxNGVCODM3RjNFRjhDRDVhNEI1In0",
+    "payload": "eyJkb21haW4iOiJkaWxsaW5nZXItZmluYWwudmVyY2VsLmFwcCJ9",
+    "signature": "MHgyZWRjMjZlYmE5MjZiNzFjYzhjMmIzZGY1MTUwNDE3OTJhNmI0ODQ2NjAzMzU3ZjBlNTczNjViMzBkMTZjZjRkMDc4MDU5NzA3MTQyZDRkNGVmNGIwMDg1OWFmN2I5YmI0NDMyMWQzMTljNDdmMTY4ZTIxN2MzOTY2NjVlOGJjMzFi"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Pinky Glazers Donut Shop",
+    "iconUrl": "https://i.imgur.com/IHAbVrG.png",
+    "homeUrl": "https://donut-miner-game.vercel.app/",
+    "splashImageUrl": "https://i.imgur.com/IHAbVrG.png",
+    "splashBackgroundColor": "#000000"
+  }
+}

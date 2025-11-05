@@ -1,5 +1,5 @@
 // js/audio.js
-import * as State from './js/state.js';
+import * as State from './state.js';
 
 // --- Private Module Variables ---
 let kick, hiHat, bass, melody;

@@ -1,5 +1,6 @@
-// NEW: Import the new state module
+// Import state and new UI module
 import * as State from './js/state.js';
+import * as UI from './js/ui.js';
 
 // Farcaster SDK is imported at the top level
 import FarcasterSDK from 'https://esm.sh/@farcaster/miniapp-sdk';
@@ -7,24 +8,13 @@ import FarcasterSDK from 'https://esm.sh/@farcaster/miniapp-sdk';
 // =================================================================
 // BLOCKCHAIN CONFIGURATION
 // =================================================================
-// =================================================================
-// CONFIGURATION
-// =================================================================
 const API_BASE_URL = 'https://last-game-kappa.vercel.app';
 const REFRESH_INTERVAL = 10000; // 10 seconds
-
-// CONTRACT ADDRESSES - UPDATED FOR NEW MULTICALL
 const MULTICALL_ADDRESS = '0xe03a89eb8b75d73Caf762a81dA260106fD42F18A';
 const LP_TOKEN_ADDRESS = '0xc3b9bd6f7d4bfcc22696a7bc1cc83948a33d7fab';
 
 // =================================================================
-// BLOCKCHAIN STATE  
-// =================================================================
-// -- This section has been moved to js/state.js --
-// =================================================================
-
-// =================================================================
-// FARCASTER SDK INITIALIZATION (FIX 1: EARLY STARTUP)
+// FARCASTER SDK INITIALIZATION
 // =================================================================
 async function initSDK() {
     try {
@@ -36,7 +26,7 @@ async function initSDK() {
 }
 
 // =================================================================
-// TRANSACTION RETRY HELPER (FIX 2: WALLET LATENCY)
+// TRANSACTION RETRY HELPER
 // =================================================================
 async function sendTxWithRetry(provider, txParams, maxAttempts = 3, delay = 500) {
     for (let i = 0; i < maxAttempts; i++) {
@@ -70,74 +60,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initSDK(); 
 
     // =============================================================
-    // UI STATE (Non-blockchain)
+    // DOM ELEMENTS
     // =============================================================
-    // -- This section has been moved to js/state.js --
-    // =============================================================
+    // NEW: Get all DOM elements from the UI module
+    const dom = UI.cacheDOMElements();
 
     // =============================================================
-    // DOM ELEMENTS (Updated to include new Blaze and Toggle elements)
+    // HELPER FUNCTIONS
     // =============================================================
-    const dom = {
-        glazery: {
-            kingStatus: document.getElementById('bakery-king-status'),
-            cps: document.getElementById('bakery-cps'),
-            baked: document.getElementById('bakery-baked'),
-            actionButton: document.getElementById('bakery-action-button'),
-            canvas: document.getElementById('cookie-canvas'),
-            rainContainer: document.getElementById('cookie-rain-container'),
-            glazeColorButton: document.getElementById('glaze-color-button'),
-            sprinkleColorButton: document.getElementById('sprinkle-color-button'),
-            donutBaseColorButton: document.getElementById('donut-base-color-button'),
-            zoomSlider: document.getElementById('glazery-zoom-slider'),
-            donutBalance: document.getElementById('player-donut-balance'),
-            glazePrice: document.getElementById('glaze-price-display'),
-            availableBalance: document.getElementById('available-balance-display'),
-            totalSupply: document.getElementById('total-supply-display'),
-            currentDps: document.getElementById('current-dps-display'),
-            
-            toggleButton: document.getElementById('view-toggle-button'),
-            glazeContainer: document.getElementById('glaze-container'),
-            blazeContainer: document.getElementById('blaze-container'),
-            glazeDpsDisplay: document.getElementById('glaze-dps-display'),
-
-            blazePrice: document.getElementById('blaze-price-display'),
-            blazeAvailableBalance: document.getElementById('blaze-available-balance-display'),
-            blazeActionButton: document.getElementById('blaze-action-button'),
-            blazeClaimAmount: document.getElementById('blaze-claim-amount'),
-        },
-        profileName: document.getElementById('player-profile-name'),
-        musicToggleButton: document.getElementById('music-toggle-button'),
-        sfxToggleButton: document.getElementById('sfx-toggle-button'),
-        darkModeToggleButton: document.getElementById('dark-mode-toggle-button'),
-        infoButton: document.getElementById('info-button'),
-        infoModal: document.getElementById('info-modal'),
-        infoModalOverlay: document.getElementById('info-modal-overlay'),
-        infoModalClose: document.getElementById('info-modal-close'),
-        modalInfo: {
-            totalSupply: document.getElementById('modal-total-supply'),
-            nextHalving: document.getElementById('modal-next-halving'),
-            currentMiner: document.getElementById('modal-current-miner'),
-        }
-    };
-
-    // =============================================================
-    // HELPER FUNCTIONS (remains the same)
-    // =============================================================
-
-    const formatNumber = (num) => {
-        const n = parseFloat(num);
-        if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
-        if (n >= 1000) return (n / 1000).toFixed(2) + 'K';
-        return n.toFixed(2);
-    };
-    
-    const formatTime = (seconds) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
+    // -- formatNumber and formatTime moved to js/ui.js --
 
     // =============================================================
     // BLOCKCHAIN FUNCTIONS
@@ -151,7 +82,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const context = await FarcasterSDK.context;
             if (context && context.user) {
-                // Use imported state
                 State.blockchainData.fid = context.user.fid;
                 console.log('[Blockchain] FID:', State.blockchainData.fid);
             }
@@ -161,7 +91,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const accounts = await provider.request({ method: 'eth_requestAccounts' });
                 const address = accounts[0];
                 console.log('[Blockchain] User address:', address);
-                // Use imported state
                 State.blockchainData.userAddress = address;
                 
                 if (dom.profileName) {
@@ -199,14 +128,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             console.log('[Blockchain] Data received:', data);
             
-            // Update imported state object
-            // We use Object.assign to merge the new data into our existing state object
             Object.assign(State.blockchainData, data);
             
             if (data.blaze) {
-                // Also assign the blaze data into the state's blaze object
                 Object.assign(State.blockchainData.blaze, data.blaze, {
-                    // Ensure userNeedsApproval has a default value
                     userNeedsApproval: data.blaze.userNeedsApproval !== undefined ? data.blaze.userNeedsApproval : true
                 });
 
@@ -216,8 +141,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             try {
-                updateUI();
-                updateBlazeryUI();
+                // NEW: Call UI module functions
+                UI.updateUI(dom);
+                UI.updateBlazeryUI(dom);
             } catch (renderError) {
                 console.error('[Rendering Error] Failed to update UI after fetch (WASM crash likely):', renderError.message);
                 return;
@@ -239,7 +165,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             console.log('[Blockchain] Fetching transaction data...');
             
-            // Use imported state
             const address = State.blockchainData.userAddress;
             
             if (!address) {
@@ -284,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             setTimeout(() => {
                 console.log('[Blockchain] Refreshing after transaction...');
-                fetchGameState(State.blockchainData.userAddress); // Use imported state
+                fetchGameState(State.blockchainData.userAddress);
             }, 3000);
             
         } catch (error) {
@@ -305,7 +230,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             if (!FarcasterSDK) throw new Error("SDK not initialized.");
             
-            // Use imported state
             const address = State.blockchainData.userAddress;
             
             if (!address) {
@@ -313,14 +237,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            // Use imported state
             if (State.blockchainData.blaze.userNeedsApproval) {
                 console.log('[Blaze] Needs approval - calling approve transaction');
                 await sendApprovalTransaction(address);
                 return;
             }
             
-            // Use imported state
             const lpBalance = parseFloat(State.blockchainData.blaze.userLpBalanceFormatted);
             const lpNeeded = parseFloat(State.blockchainData.blaze.priceFormatted);
             
@@ -375,13 +297,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Blaze] Approval transaction sent:', txHash);
             console.log('Approval submitted! Now you can Blaze.');
             
-            // Use imported state
             State.blockchainData.blaze.userNeedsApproval = false;
-            updateBlazeryUI();
+            // NEW: Call UI module function
+            UI.updateBlazeryUI(dom);
             
             setTimeout(() => {
                 console.log('[Blaze] Refreshing after approval...');
-                fetchGameState(State.blockchainData.userAddress); // Use imported state
+                fetchGameState(State.blockchainData.userAddress);
             }, 3000);
             
         } catch (error) {
@@ -429,7 +351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             setTimeout(() => {
                 console.log('[Blaze] Refreshing after buy...');
-                fetchGameState(State.blockchainData.userAddress); // Use imported state
+                fetchGameState(State.blockchainData.userAddress);
             }, 3000);
             
         } catch (error) {
@@ -438,139 +360,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    // All functions below now read from the imported State object
-    
-    function updateBlazeryUI() {
-        if (!State.blockchainData.blaze) {
-            console.log('[Blaze] No blaze data available');
-            return;
-        }
-        
-        console.log('[Blaze] Updating UI');
-        
-        const userNeedsApproval = State.blockchainData.blaze.userNeedsApproval;
-        const blazeButton = dom.glazery.blazeActionButton;
-        
-        if (dom.glazery.blazePrice) {
-            const lpAmount = parseFloat(State.blockchainData.blaze.priceFormatted);
-            dom.glazery.blazePrice.textContent = lpAmount.toFixed(4);
-        }
-        
-        if (dom.glazery.blazeClaimAmount) {
-            const ethAmount = parseFloat(State.blockchainData.blaze.wethAccumulatedFormatted);
-            dom.glazery.blazeClaimAmount.textContent = `${ethAmount.toFixed(6)} ETH`; 
-        }
-        
-        if (dom.glazery.blazeAvailableBalance) {
-            const userLpBalance = parseFloat(State.blockchainData.blaze.userLpBalanceFormatted);
-            dom.glazery.blazeAvailableBalance.textContent = `${userLpBalance.toFixed(4)} LP available`;
-        }
-        
-        if (blazeButton) {
-            if (userNeedsApproval) {
-                blazeButton.textContent = 'Approve LP';
-                blazeButton.disabled = false;
-            } else {
-                const lpBalance = parseFloat(State.blockchainData.blaze.userLpBalanceFormatted);
-                const lpNeeded = parseFloat(State.blockchainData.blaze.priceFormatted);
-                
-                blazeButton.textContent = 'Blaze';
-                blazeButton.disabled = lpBalance < lpNeeded;
-            }
-        }
-        
-        console.log('[Blaze] UI updated successfully');
-    }
-
-    function updateUI() {
-        console.log('[Blockchain] Updating UI');
-        
-        const userIsMiner = State.blockchainData.userAddress && 
-                           State.blockchainData.currentMiner && 
-                           State.blockchainData.userAddress.toLowerCase() === State.blockchainData.currentMiner.toLowerCase();
-        
-       let kingGlazerDisplay;
-
-        if (userIsMiner) {
-            kingGlazerDisplay = 'You';
-        } else if (State.blockchainData.currentMinerUsername) {
-            kingGlazerDisplay = `@${State.blockchainData.currentMinerUsername}`;
-        } else if (State.blockchainData.currentMiner && State.blockchainData.currentMiner !== '0x0000000000000000000000000000000000000000') {
-            const address = State.blockchainData.currentMiner;
-            kingGlazerDisplay = `${address.slice(0, 6)}...${address.slice(-4)}`;
-        } else {
-            kingGlazerDisplay = 'None';
-        }
-        dom.glazery.kingStatus.textContent = kingGlazerDisplay;
-
-        dom.glazery.cps.textContent = State.blockchainData.claimableDonutsFormatted ? formatNumber(State.blockchainData.claimableDonutsFormatted) : '0.00';
-        dom.glazery.baked.textContent = formatTime(State.blockchainData.timeAsMiner || 0);
-        
-        dom.glazery.glazePrice.textContent = `${parseFloat(State.blockchainData.priceInEth || 0).toFixed(6)} ETH`;
-        
-        dom.glazery.availableBalance.textContent = `${parseFloat(State.blockchainData.userEthBalanceFormatted || 0).toFixed(4)} ETH available`;
-        
-        if (dom.glazery.blazeAvailableBalance) {
-             dom.glazery.blazeAvailableBalance.textContent = `${parseFloat(State.blockchainData.blaze.userLpBalanceFormatted || 0).toFixed(4)} LP available`;
-        }
-        
-        if (dom.glazery.blazeClaimAmount && State.blockchainData.blaze.wethAccumulatedFormatted) {
-            const claimEth = parseFloat(State.blockchainData.blaze.wethAccumulatedFormatted);
-            dom.glazery.blazeClaimAmount.textContent = `${claimEth.toFixed(6)} ETH`;
-        }
-        
-        if (dom.glazery.glazeDpsDisplay) {
-             dom.glazery.glazeDpsDisplay.textContent = parseFloat(State.blockchainData.currentDpsFormatted || 0).toFixed(2);
-        }
-
-        dom.glazery.donutBalance.textContent = `🍩 ${formatNumber(State.blockchainData.userDonutBalanceFormatted || 0)}`;
-        dom.glazery.totalSupply.textContent = `🍩 ${formatNumber(State.blockchainData.totalDonutSupplyFormatted || 0)}`;
-        dom.glazery.currentDps.textContent = parseFloat(State.blockchainData.currentDpsFormatted || 0).toFixed(2);
-        
-        dom.glazery.actionButton.textContent = 'Glaze';
-        
-        if (dom.modalInfo.totalSupply) {
-            dom.modalInfo.totalSupply.textContent = `🍩 ${formatNumber(State.blockchainData.totalDonutSupplyFormatted || 0)}`;
-            dom.modalInfo.nextHalving.textContent = formatTime(State.blockchainData.secondsUntilHalving || 0);
-            
-            const minerDisplay = State.blockchainData.currentMiner 
-                ? `${State.blockchainData.currentMiner.slice(0, 6)}...${State.blockchainData.currentMiner.slice(-4)}`
-                : 'None';
-            dom.modalInfo.currentMiner.textContent = minerDisplay;
-        }
-    }
-
     // =============================================================
-    // VIEW TOGGLE LOGIC (NEW FUNCTION)
+    // UI FUNCTIONS
     // =============================================================
-    function toggleView() {
-        playSoundEffect('crunch');
-        // Use imported state
-        State.uiState.isGlazeView = !State.uiState.isGlazeView;
-        
-        // Use imported state
-        if (State.uiState.isGlazeView) {
-            dom.glazery.glazeContainer.classList.remove('hidden');
-            dom.glazery.blazeContainer.classList.add('hidden');
-            dom.glazery.toggleButton.textContent = '🧊';
-            dom.glazery.rainContainer.classList.remove('blaze-active');
-            if (composer) {
-                composer.enabled = false;
-            }
-        } else {
-            dom.glazery.glazeContainer.classList.add('hidden');
-            dom.glazery.blazeContainer.classList.remove('hidden');
-            dom.glazery.toggleButton.textContent = '🔥';
-            dom.glazery.rainContainer.classList.add('blaze-active');
-            if (composer) {
-                composer.enabled = true;
-            }
-        }
-    }
+    // -- All UI functions moved to js/ui.js --
+    // =============================================================
 
 
     // =============================================================
-    // AUDIO SETUP (Tone.js) - FIXED BASS SYNC ISSUE
+    // AUDIO SETUP (Tone.js)
     // =============================================================
     let kick, hiHat, bass, melody;
     let kickSequence, hiHatSequence, bassSequence, melodySequence;
@@ -664,7 +462,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function playSoundEffect(sound) {
-        // Use imported state
         if (State.uiState.isSfxMuted) return;
 
         if (Tone.context.state !== 'running') {
@@ -689,7 +486,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function toggleSfx() {
-        // Use imported state
         State.uiState.isSfxMuted = !State.uiState.isSfxMuted;
         dom.sfxToggleButton.textContent = State.uiState.isSfxMuted ? '🔇' : '🔊';
         if (!State.uiState.isSfxMuted) {
@@ -718,36 +514,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             dom.musicToggleButton.textContent = '🎵';
         }
         isMusicPlaying = !isMusicPlaying;
-    }
-
-    // =============================================================
-    // DARK MODE TOGGLE
-    // =============================================================
-    function toggleDarkMode() {
-        // Use imported state
-        State.uiState.isDarkMode = !State.uiState.isDarkMode;
-        const body = document.body;
-        if (State.uiState.isDarkMode) {
-            body.classList.add('dark');
-            dom.darkModeToggleButton.textContent = '☀️';
-        } else {
-            body.classList.remove('dark');
-            dom.darkModeToggleButton.textContent = '🌙';
-        }
-    }
-
-    // =============================================================
-    // INFO MODAL
-    // =============================================================
-    function showInfoModal() {
-        playSoundEffect('crunch');
-        dom.infoModal.classList.remove('hidden');
-        dom.infoModalOverlay.classList.remove('hidden');
-    }
-
-    function hideInfoModal() {
-        dom.infoModal.classList.add('hidden');
-        dom.infoModalOverlay.classList.add('hidden');
     }
 
     // =============================================================
@@ -1211,16 +977,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         dom.glazery.blazeActionButton.onclick = handleBlazeClick;
     }
 
+    // NEW: Updated event listeners to call UI module
     if (dom.glazery.toggleButton) {
-        dom.glazery.toggleButton.onclick = toggleView;
+        dom.glazery.toggleButton.onclick = () => UI.toggleView(dom, playSoundEffect, composer);
     }
 
     dom.musicToggleButton.onclick = toggleMusic;
     dom.sfxToggleButton.onclick = toggleSfx;
-    dom.darkModeToggleButton.onclick = () => {
-        playSoundEffect('crunch');
-        toggleDarkMode();
-    };
+    
+    // NEW: Updated event listener
+    dom.darkModeToggleButton.onclick = () => UI.toggleDarkMode(dom, playSoundEffect);
+    
     dom.glazery.glazeColorButton.onclick = () => {
         playSoundEffect('crunch');
         changeGlazeColor();
@@ -1234,9 +1001,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         changeDonutBaseColor();
     };
 
-    dom.infoButton.onclick = showInfoModal;
-    dom.infoModalClose.onclick = hideInfoModal;
-    dom.infoModalOverlay.onclick = hideInfoModal;
+    // NEW: Updated event listeners
+    dom.infoButton.onclick = () => UI.showInfoModal(dom, playSoundEffect);
+    dom.infoModalClose.onclick = () => UI.hideInfoModal(dom);
+    dom.infoModalOverlay.onclick = () => UI.hideInfoModal(dom);
 
     dom.glazery.zoomSlider.oninput = () => {
         if (!isThreeJSInitialized) return;
@@ -1256,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         setInterval(() => {
             console.log('[Init] Auto-refreshing...');
-            fetchGameState(State.blockchainData.userAddress); // Use imported state
+            fetchGameState(State.blockchainData.userAddress);
         }, REFRESH_INTERVAL);
         
         console.log('[Init] Complete!');

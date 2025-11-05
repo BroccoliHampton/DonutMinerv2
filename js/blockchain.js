@@ -1,7 +1,7 @@
 // js/blockchain.js
-import * as State from './js/state.js';
-import * as UI from './js/ui.js';
-import * as Scene from './js/scene.js';
+import * as State from './state.js';
+import * as UI from './ui.js';
+import * as Scene from './scene.js';
 import FarcasterSDK from 'https://esm.sh/@farcaster/miniapp-sdk';
 
 // =================================================================

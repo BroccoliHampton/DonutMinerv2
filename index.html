@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pinky Glazers ツ</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-tamagotchi-dark">
+        
+    <main class="flex-grow flex flex-col px-3 pt-4 pb-1 max-w-lg mx-auto w-full"> 
+        <div class="flex justify-between items-center mb-2">
+            <div class="flex flex-col">
+                <h1 class="text-3xl font-black text-tamagotchi-pink-dark" style="font-family: 'Luckiest Guy', cursive;">Pinky Glazers</h1>
+                
+                <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-2 flex items-center space-x-3 mt-1">
+                    <div>
+                        <div id="player-profile-name" class="font-extrabold text-sm truncate text-tamagotchi-dark">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1 self-start">
+                <button id="dark-mode-toggle-button" class="bg-tamagotchi-button-teal text-white text-base w-8 h-8 flex items-center justify-center rounded-tamagotchi-md shadow-tamagotchi active:opacity-80">🌙
+                </button>
+                <button id="info-button" class="bg-tamagotchi-button-pink text-white text-base w-8 h-8 flex items-center justify-center rounded-tamagotchi-md shadow-tamagotchi active:opacity-80">❓
+                </button>
+                <button id="music-toggle-button" class="bg-tamagotchi-button-pink text-white text-base w-8 h-8 flex items-center justify-center rounded-tamagotchi-md shadow-tamagotchi active:opacity-80">🔇
+                </button>
+                <button id="sfx-toggle-button" class="bg-tamagotchi-button-teal text-white text-base w-8 h-8 flex items-center justify-center rounded-tamagotchi-md shadow-tamagotchi active:opacity-80">🔊
+                </button>
+            </div>
+        </div>
+
+        <div id="view-glazery" class="flex-grow flex flex-col">
+            <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-2 grid grid-cols-3 gap-2">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 font-semibold">King Glazer</div>
+                    <div id="bakery-king-status" class="font-extrabold text-sm truncate text-tamagotchi-dark">Loading...</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 font-semibold">Glazed</div>
+                    <div class="font-extrabold text-sm text-tamagotchi-dark">🍩 <span id="bakery-cps">0.00</span></div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 font-semibold">Glaze Time</div>
+                    <div class="font-extrabold text-sm text-tamagotchi-dark"><span id="bakery-baked">00:00:00</span></div>
+                </div>
+            </div>
+
+            <div id="top-ticker" class="ticker-wrap" style="margin-bottom: 4px; margin-top: 8px;">
+                <div class="ticker-move">
+                    <span>Glaze price doubles each time a new Glazer takes over, and price cools down to $0 over 1 hour. ... Glaze price doubles each time a new Glazer takes over, and price cools down to $0 over 1 hour. ... </span>
+                </div>
+            </div>
+
+            <div id="cookie-rain-container" class="relative h-56 flex items-center justify-center overflow-hidden bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi glitch-static">
+                <div class="falling-snow"></div>
+                <canvas id="cookie-canvas"></canvas>
+                <button id="view-toggle-button" class="shadow-tamagotchi">🧊</button>
+                <button id="glaze-color-button" class="color-cycle-button shadow-tamagotchi bg-white text-tamagotchi-dark">🎨</button>
+                <button id="sprinkle-color-button" class="color-cycle-button shadow-tamagotchi bg-white text-tamagotchi-dark">🌈</button>
+                <button id="donut-base-color-button" class="color-cycle-button shadow-tamagotchi bg-white text-tamagotchi-dark">🍩</button>
+                <input id="glazery-zoom-slider" type="range" class="zoom-slider">
+            </div>
+
+            <div id="bottom-ticker" class="ticker-wrap" style="margin-top: 4px;">
+                <div class="ticker-move-reverse">
+                    <span>Glaze price doubles each time a new Glazer takes over, and price cools down to $0 over 1 hour. ... Glaze price doubles each time a new Glazer takes over, and price cools down to $0 over 1 hour. ... </span>
+                </div>
+            </div>
+            
+            <div id="glaze-blaze-wrapper" class="glaze-blaze-container flex flex-col justify-start"> 
+                
+                <div id="glaze-container">
+                    <div class="bg-tamagotchi-card text-tamagotchi-dark p-2 rounded-tamagotchi-lg shadow-tamagotchi">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-xs font-semibold text-gray-600">Glaze Price</div>
+                                <div id="glaze-price-display" class="text-xl font-extrabold text-tamagotchi-dark">$0.00</div>
+                                <div id="available-balance-display" class="text-xs text-gray-500">$0.00 available</div>
+                            </div>
+                            
+                            <div class="flex flex-col items-end">
+                                <button id="bakery-action-button" class="bg-tamagotchi-button-pink text-white py-2 px-6 rounded-tamagotchi-md text-sm font-bold active:opacity-80 disabled:opacity-50 shadow-tamagotchi">
+                                    Glaze
+                                </button>
+                                <div class="text-right mt-1"> 
+                                    <div class="text-xs font-semibold text-gray-600">Donuts/s</div>
+                                    <div id="glaze-dps-display" class="text-sm font-extrabold text-tamagotchi-dark">0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="blaze-container" class="hidden"> 
+                    <div class="bg-tamagotchi-card text-tamagotchi-dark p-2 rounded-tamagotchi-lg shadow-tamagotchi">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-xs font-semibold text-gray-600">Blaze Price (LP)</div>
+                                <div id="blaze-price-display" class="text-xl font-extrabold text-tamagotchi-dark">0.00</div>
+                                <div id="blaze-available-balance-display" class="text-xs text-gray-500">0.00 LP available</div>
+                            </div>
+                            
+                            <div class="flex flex-col items-end">
+                                <button id="blaze-action-button" class="bg-tamagotchi-button-teal text-white py-2 px-6 rounded-tamagotchi-md text-sm font-bold active:opacity-80 disabled:opacity-50 shadow-tamagotchi">
+                                    Blaze
+                                </button>
+                                <div class="text-right mt-1">
+                                    <div class="text-xs font-semibold text-gray-600">Claim</div>
+                                    <div id="blaze-claim-amount" class="text-sm font-extrabold text-tamagotchi-dark">0.00 ETH</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-2 grid grid-cols-3 gap-2 mt-2">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 font-semibold">Donut Balance</div>
+                    <div id="player-donut-balance" class="font-extrabold text-sm truncate text-tamagotchi-dark">🍩 0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 font-semibold">Total Supply</div>
+                    <div id="total-supply-display" class="font-extrabold text-sm text-tamagotchi-dark">🍩 0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 font-semibold">DPS</div>
+                    <div id="current-dps-display" class="font-extrabold text-sm text-tamagotchi-dark">0</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="info-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+    <div id="info-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-4 z-50 hidden w-11/12 max-w-xs text-tamagotchi-dark overflow-y-auto" style="max-height: 90vh;">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xl font-bold text-tamagotchi-pink-dark">Info</h3>
+            <button id="info-modal-close" class="text-2xl font-bold text-gray-500 hover:text-tamagotchi-pink-dark">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-4 space-y-4 text-tamagotchi-dark">
+                <p class="font-bold text-lg" style="font-family: 'Comic Neue', cursive;">
+                    Hello and welcome to Pinky Glazers!
+                </p>
+                <p class="text-sm">
+                    Pay the Glaze Price to become <strong>King Glazer</strong> and earn <strong>100%</strong> of the $DONUT emissions until you are replaced.
+                </p>
+                <p class="text-sm">
+                    Glaze price doubles each time a new Glazer takes over, and price cools down to $0 over 1 hour.
+                </p>
+            </div>
+            <h3 class="text-xl font-bold text-tamagotchi-pink-dark pt-2">Global Donut Stats</h3>
+            <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-4 space-y-3 text-tamagotchi-dark">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-semibold text-gray-600">Total Donut Supply</span>
+                    <span id="modal-total-supply" class="font-extrabold text-tamagotchi-dark">🍩 0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-semibold text-gray-600">Time Until Halving</span>
+                    <span id="modal-next-halving" class="font-extrabold text-tamagotchi-dark">--:--:--</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span id="modal-current-miner-label" class="text-sm font-semibold text-gray-600">Current Miner</span>
+                    <span id="modal-current-miner" class="font-extrabold text-tamagotchi-dark text-xs">None</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js" type="module"></script>
+</body>
+</html>

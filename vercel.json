@@ -1,31 +1,31 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
+  "version": 2,
+  "builds": [
     {
-      "src": "*.css",
-      "use": "@vercel/static"
-    },
+      "src": "public/**",
+      "use": "@vercel/static"
+    },
     {
-      "src": "*.js",
-      "use": "@vercel/static"
-    },
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
     {
-      "src": "js/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/.well-known/farcaster.json",
-      "destination": "/public/.well-known/farcaster.json"
-    }
-  ]
+      "src": "*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "js/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/.well-known/farcaster.json",
+      "destination": "/public/.well-known/farcaster.json"
+    }
+  ]
 }

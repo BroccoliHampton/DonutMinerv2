@@ -1,5 +1,5 @@
 // js/ui.js
-import * as State from './js/state.js';
+import * as State from './state.js';
 
 // --- Private Helper Functions (only used inside this file) ---
 

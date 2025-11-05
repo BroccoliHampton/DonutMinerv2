@@ -1,31 +1,17 @@
 {
   "version": 2,
-  "builds": [
+  "routes": [
     {
-      "src": "public/**",
-      "use": "@vercel/static"
+      "src": "/.well-known/farcaster.json",
+      "dest": "/public/.well-known/farcaster.json"
     },
     {
-      "src": "*.html",
-      "use": "@vercel/static"
+      "src": "/js/(.*)",
+      "dest": "/js/$1"
     },
     {
-      "src": "style.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "app.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "js/*.js",
-      "use": "@vercel/static"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/.well-known/farcaster.json",
-      "destination": "/public/.well-known/farcaster.json"
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }

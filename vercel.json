@@ -4,17 +4,6 @@
     {
       "source": "/.well-known/farcaster.json",
       "destination": "/public/.well-known/farcaster.json"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": "User-Agent",
-          "value": ".*Farcaster.*"
-        }
-      ],
-      "destination": "https://last-game-kappa.vercel.app/api/index/"
     }
   ]
 }

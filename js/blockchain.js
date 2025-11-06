@@ -2,7 +2,7 @@
 import * as State from './state.js';
 import * as UI from './ui.js';
 import * as Scene from './scene.js';
-import FarcasterSDK from 'https://esm.sh/@farcaster/miniapp-sdk';
+import * as WalletProvider from './walletProvider.js';
 
 // =================================================================
 // CONFIGURATION
@@ -20,21 +20,9 @@ let dom;
 // =================================================================
 
 /**
- * Initializes the Farcaster SDK and clears the splash screen.
- */
-async function initSDK() {
-    try {
-        await FarcasterSDK.actions.ready();
-        console.log('[SDK] Farcaster SDK initialized and ready.');
-    } catch (e) {
-        console.error('[SDK] Failed to initialize Farcaster SDK:', e.message);
-    }
-}
-
-/**
  * Sends a transaction with retry logic.
  */
-async function sendTxWithRetry(provider, txParams, maxAttempts = 3, delay = 500) {
+async function sendTxWithRetry(txParams, maxAttempts = 3, delay = 500) {
     for (let i = 0; i < maxAttempts; i++) {
         try {
             if (i > 0) {
@@ -42,15 +30,13 @@ async function sendTxWithRetry(provider, txParams, maxAttempts = 3, delay = 500)
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
             
-            const txHash = await provider.request({
-                method: 'eth_sendTransaction',
-                params: txParams
-            });
-            
+            const txHash = await WalletProvider.sendTransaction(txParams);
             return txHash;
 
         } catch (error) {
-            const isRetryable = error.message.includes('timeout') || error.message.includes('Queue is full') || error.message.includes('JSON RPC');
+            const isRetryable = error.message.includes('timeout') || 
+                               error.message.includes('Queue is full') || 
+                               error.message.includes('JSON RPC');
 
             if (!isRetryable || i === maxAttempts - 1) {
                 console.error('[Blockchain] Transaction failed permanently or non-retryable error:', error.message);
@@ -62,41 +48,58 @@ async function sendTxWithRetry(provider, txParams, maxAttempts = 3, delay = 500)
 }
 
 /**
- * Gets the user's wallet address from the Farcaster SDK.
+ * Gets the user's wallet address from the wallet provider.
  */
 async function getUserAddress() {
     try {
         console.log('[Blockchain] Getting user address...');
         
-        if (!FarcasterSDK) throw new Error("SDK not initialized.");
+        const address = await WalletProvider.getAddress();
         
-        const context = await FarcasterSDK.context;
-        if (context && context.user) {
-            State.blockchainData.fid = context.user.fid;
-            console.log('[Blockchain] FID:', State.blockchainData.fid);
-        }
-        
-        const provider = await FarcasterSDK.wallet.getEthereumProvider();
-        if (provider) {
-            const accounts = await provider.request({ method: 'eth_requestAccounts' });
-            const address = accounts[0];
-            console.log('[Blockchain] User address:', address);
+        if (address) {
             State.blockchainData.userAddress = address;
+            console.log('[Blockchain] User address:', address);
             
+            // Try to get Farcaster context if available
+            const farcasterContext = await WalletProvider.getFarcasterContext();
+            if (farcasterContext && farcasterContext.user) {
+                State.blockchainData.fid = farcasterContext.user.fid;
+                console.log('[Blockchain] FID:', State.blockchainData.fid);
+            }
+            
+            // Update profile name display
             if (dom.profileName) {
-                dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
+                const walletType = WalletProvider.getWalletType();
+                const walletLabel = walletType === 'metamask' ? ' 🦊' : '';
+                dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)}${walletLabel}`;
             }
             
             return address;
         }
+        
+        // If no address, check if we need manual connection
+        if (WalletProvider.needsManualConnection()) {
+            console.log('[Blockchain] Wallet needs manual connection');
+            if (dom.profileName) {
+                dom.profileName.textContent = 'Connect Wallet';
+            }
+            if (dom.connectWalletButton) {
+                dom.connectWalletButton.classList.remove('hidden');
+            }
+        } else {
+            if (dom.profileName) {
+                dom.profileName.textContent = 'No Wallet';
+            }
+        }
+        
+        return null;
     } catch (error) {
         console.log('[Blockchain] Could not get address:', error.message);
+        if (dom.profileName) {
+            dom.profileName.textContent = 'Error';
+        }
+        return null;
     }
-    
-    if (dom.profileName) {
-        dom.profileName.textContent = 'Not Connected';
-    }
-    return null;
 }
 
 /**
@@ -154,16 +157,15 @@ async function openGlazeFrame() {
     Scene.setDonutSpinSpeed(0.5);
     
     try {
-        if (!FarcasterSDK) throw new Error("SDK not initialized.");
-        
-        console.log('[Blockchain] Fetching transaction data...');
-        
         const address = State.blockchainData.userAddress;
         
         if (!address) {
             console.log('Transaction failed: Please connect your wallet first');
+            alert('Please connect your wallet first');
             return;
         }
+        
+        console.log('[Blockchain] Fetching transaction data...');
         
         const txDataResponse = await fetch(`${API_BASE_URL}/api/transaction?player=${address}`, {
             method: 'GET',
@@ -180,22 +182,16 @@ async function openGlazeFrame() {
         const txData = await txDataResponse.json();
         console.log('[Blockchain] Transaction data received:', txData);
         
-        const provider = await FarcasterSDK.wallet.getEthereumProvider();
-        
-        if (!provider) {
-            throw new Error('Wallet provider not available');
-        }
-        
         console.log('[Blockchain] Sending transaction...');
         
-        const txParams = [{
+        const txParams = {
             from: address,
             to: txData.params.to,
             data: txData.params.data,
             value: txData.params.value, 
-        }];
+        };
 
-        const txHash = await sendTxWithRetry(provider, txParams);
+        const txHash = await sendTxWithRetry(txParams);
         
         console.log('[Blockchain] Transaction sent:', txHash);
         console.log('Transaction submitted! Refreshing game state...'); 
@@ -207,7 +203,8 @@ async function openGlazeFrame() {
         
     } catch (error) {
         console.error('[Blockchain] Transaction error:', error);
-        console.log(`Transaction failed: ${error.message}`); 
+        console.log(`Transaction failed: ${error.message}`);
+        alert(`Transaction failed: ${error.message}`);
     }
 }
 
@@ -231,22 +228,16 @@ async function sendApprovalTransaction(address) {
         const txData = await approvalResponse.json();
         console.log('[Blaze] Approval transaction data received:', txData);
         
-        const provider = await FarcasterSDK.wallet.getEthereumProvider();
-        
-        if (!provider) {
-            throw new Error('Wallet provider not available');
-        }
-        
         console.log('[Blaze] Sending approval transaction...');
         
-        const txParams = [{
+        const txParams = {
             from: address,
             to: txData.params.to,
             data: txData.params.data,
             value: txData.params.value || '0x0',
-        }];
+        };
         
-        const txHash = await sendTxWithRetry(provider, txParams);
+        const txHash = await sendTxWithRetry(txParams);
         
         console.log('[Blaze] Approval transaction sent:', txHash);
         console.log('Approval submitted! Now you can Blaze.');
@@ -262,6 +253,7 @@ async function sendApprovalTransaction(address) {
     } catch (error) {
         console.error('[Blaze] Approval error:', error);
         console.log(`Approval failed: ${error.message}`);
+        alert(`Approval failed: ${error.message}`);
     }
 }
 
@@ -285,22 +277,16 @@ async function sendBuyTransaction(address) {
         const txData = await buyResponse.json();
         console.log('[Blaze] Buy transaction data received:', txData);
         
-        const provider = await FarcasterSDK.wallet.getEthereumProvider();
-        
-        if (!provider) {
-            throw new Error('Wallet provider not available');
-        }
-        
         console.log('[Blaze] Sending buy transaction...');
         
-        const txParams = [{
+        const txParams = {
             from: address,
             to: txData.params.to,
             data: txData.params.data,
             value: txData.params.value || '0x0',
-        }];
+        };
         
-        const txHash = await sendTxWithRetry(provider, txParams);
+        const txHash = await sendTxWithRetry(txParams);
         
         console.log('[Blaze] Buy transaction sent:', txHash);
         console.log('Buy transaction submitted! You received ETH.');
@@ -313,6 +299,7 @@ async function sendBuyTransaction(address) {
     } catch (error) {
         console.error('[Blaze] Buy transaction error:', error);
         console.log(`Buy transaction failed: ${error.message}`);
+        alert(`Buy transaction failed: ${error.message}`);
     }
 }
 
@@ -321,7 +308,7 @@ async function sendBuyTransaction(address) {
 // =================================================================
 
 /**
- * Main app initializer. Caches the DOM, inits SDK, gets user address,
+ * Main app initializer. Caches the DOM, inits wallet provider, gets user address,
  * fetches initial state, and sets up the auto-refresh interval.
  * @param {object} domElements - The cached DOM elements from UI.cacheDOMElements().
  */
@@ -329,8 +316,14 @@ export async function initApp(domElements) {
     console.log('[Init] Starting application...');
     dom = domElements; // Cache the DOM for other functions in this module
     
-    await initSDK();
+    // Initialize wallet provider
+    const walletInit = await WalletProvider.initializeWallet();
+    console.log('[Init] Wallet initialization result:', walletInit);
+    
+    // Get user address (will show connect button if needed)
     const userAddress = await getUserAddress();
+    
+    // Fetch initial game state
     await fetchGameState(userAddress);
     
     // Set up auto-refresh
@@ -340,6 +333,37 @@ export async function initApp(domElements) {
     }, REFRESH_INTERVAL);
     
     console.log('[Init] Application complete!');
+}
+
+/**
+ * Public handler for connecting MetaMask wallet (browser mode only)
+ */
+export async function handleConnectWallet() {
+    console.log('[Blockchain] Connect wallet clicked');
+    
+    try {
+        const address = await WalletProvider.connectMetaMask();
+        
+        if (address) {
+            State.blockchainData.userAddress = address;
+            
+            // Update UI
+            if (dom.profileName) {
+                dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)} 🦊`;
+            }
+            if (dom.connectWalletButton) {
+                dom.connectWalletButton.classList.add('hidden');
+            }
+            
+            // Fetch game state with new address
+            await fetchGameState(address);
+            
+            console.log('[Blockchain] Wallet connected successfully');
+        }
+    } catch (error) {
+        console.error('[Blockchain] Failed to connect wallet:', error);
+        alert('Failed to connect wallet. Please make sure MetaMask is installed and try again.');
+    }
 }
 
 /**
@@ -358,12 +382,11 @@ export async function handleBlazeClick() {
     Scene.setDonutSpinSpeed(0.5);
     
     try {
-        if (!FarcasterSDK) throw new Error("SDK not initialized.");
-        
         const address = State.blockchainData.userAddress;
         
         if (!address) {
             console.log('[Blaze] No wallet connected');
+            alert('Please connect your wallet first');
             return;
         }
         
@@ -379,6 +402,7 @@ export async function handleBlazeClick() {
         if (lpBalance < lpNeeded) {
             console.log('[Blaze] Insufficient LP balance');
             console.log(`Need ${lpNeeded.toFixed(4)} LP but only have ${lpBalance.toFixed(4)} LP`);
+            alert(`Insufficient LP balance. Need ${lpNeeded.toFixed(4)} LP but only have ${lpBalance.toFixed(4)} LP`);
             return;
         }
         

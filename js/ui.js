@@ -130,20 +130,19 @@ export function updateUI(dom) {
 
     // Always try to show Farcaster username first
     if (State.blockchainData.currentMinerUsername) {
-        kingGlazerDisplay = `@${State.blockchainData.currentMinerUsername}`;
-        // Add "(You)" if it's the current user
-        if (userIsMiner) {
-            kingGlazerDisplay += ' (You)';
-        }
+        const username = State.blockchainData.currentMinerUsername;
+        const youSuffix = userIsMiner ? ' (You)' : '';
+        
+        // Make it a clickable link to Warpcast profile
+        dom.glazery.kingStatus.innerHTML = `<a href="https://warpcast.com/${username}" target="_blank" rel="noopener noreferrer" class="hover:underline">@${username}</a>${youSuffix}`;
     } else if (userIsMiner) {
-        kingGlazerDisplay = 'You';
+        dom.glazery.kingStatus.textContent = 'You';
     } else if (State.blockchainData.currentMiner && State.blockchainData.currentMiner !== '0x0000000000000000000000000000000000000000') {
         const address = State.blockchainData.currentMiner;
-        kingGlazerDisplay = `${address.slice(0, 6)}...${address.slice(-4)}`;
+        dom.glazery.kingStatus.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
     } else {
-        kingGlazerDisplay = 'None';
+        dom.glazery.kingStatus.textContent = 'None';
     }
-    dom.glazery.kingStatus.textContent = kingGlazerDisplay;
 
     dom.glazery.cps.textContent = State.blockchainData.claimableDonutsFormatted ? formatNumber(State.blockchainData.claimableDonutsFormatted) : '0.00';
     dom.glazery.baked.textContent = formatTime(State.blockchainData.timeAsMiner || 0);

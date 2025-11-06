@@ -1,5 +1,5 @@
 // js/ui.js
-import * as State from './js/state.js';
+import * as State from './state.js';
 
 // --- Private Helper Functions (only used inside this file) ---
 
@@ -128,15 +128,10 @@ export function updateUI(dom) {
     
    let kingGlazerDisplay;
 
-    // Always try to show Farcaster username first
-    if (State.blockchainData.currentMinerUsername) {
-        kingGlazerDisplay = `@${State.blockchainData.currentMinerUsername}`;
-        // Add "(You)" if it's the current user
-        if (userIsMiner) {
-            kingGlazerDisplay += ' (You)';
-        }
-    } else if (userIsMiner) {
+    if (userIsMiner) {
         kingGlazerDisplay = 'You';
+    } else if (State.blockchainData.currentMinerUsername) {
+        kingGlazerDisplay = `@${State.blockchainData.currentMinerUsername}`;
     } else if (State.blockchainData.currentMiner && State.blockchainData.currentMiner !== '0x0000000000000000000000000000000000000000') {
         const address = State.blockchainData.currentMiner;
         kingGlazerDisplay = `${address.slice(0, 6)}...${address.slice(-4)}`;

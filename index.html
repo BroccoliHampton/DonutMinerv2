@@ -150,16 +150,53 @@
             <button id="info-modal-close" class="text-2xl font-bold text-gray-500 hover:text-tamagotchi-pink-dark">&times;</button>
         </div>
         <div class="space-y-3">
+            
             <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-4 space-y-4 text-tamagotchi-dark">
-                <p class="font-bold text-lg" style="font-family: 'Comic Neue', cursive;">
-                    Hello and welcome to Pinky Glazers!
-                </p>
-                <p class="text-sm">
-                    Pay the Glaze Price to become <strong>King Glazer</strong> and earn <strong>100%</strong> of the $DONUT emissions until you are replaced.
-                </p>
-                <p class="text-sm">
-                    Glaze price doubles each time a new Glazer takes over, and price cools down to $0 over 1 hour.
-                </p>
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">What Is $DONUT?</h2>
+                <p class="text-sm">$DONUT is a store-of-value token on Base, mined through a continuous Dutch auction instead of proof-of-work or staking. Auction revenue increases $DONUT's liquidity and scarcity.</p>
+        
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">How Mining Works</h2>
+                <p class="text-sm">Only one active miner at a time, called the King Glazer. The right to mine is bought with ETH through a continuous Dutch auction:</p>
+                <ul class="list-disc list-inside text-sm pl-4">
+                    <li>Price doubles after each purchase</li>
+                    <li>Then decays to 0 over one hour</li>
+                    <li>Anyone can purchase control of emissions at the current price</li>
+                </ul>
+        
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">Revenue Split</h2>
+                <ul class="list-disc list-inside text-sm pl-4">
+                    <li><strong>80%</strong> &rarr; previous King Glazer</li>
+                    <li><strong>15%</strong> &rarr; treasury (Blazery)</li>
+                    <li><strong>5%</strong> &rarr; provider (frontend host)</li>
+                </ul>
+        
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">Emission Schedule</h2>
+                <ul class="list-disc list-inside text-sm pl-4">
+                    <li>Starts at 10 DONUT / sec</li>
+                    <li>Halving every 10 days</li>
+                    <li>Tail emission: 0.01 DONUT / sec (forever)</li>
+                </ul>
+        
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">Proof of Just-In-Time Stake</h2>
+                <ul class="list-disc list-inside text-sm pl-4">
+                    <li>ETH is "staked" only while controlling emissions</li>
+                    <li>Profit if the next purchase pays more</li>
+                    <li>Lose if it pays less</li>
+                    <li>Earn $DONUT the entire time you hold control</li>
+                </ul>
+        
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">Treasury</h2>
+                <p class="text-sm">Treasury ETH is used to buy and burn DONUT-WETH LP in the Blazery. Once sufficient liquidity is established, the Glazery can be upgraded to buy and burn DONUT directly, or governance can decide to acquire other assets or reinvest the treasury.</p>
+        
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">Builder Codes</h2>
+                <p class="text-sm">Anyone can host their own Donut Shop by deploying a frontend. Add your builder code to earn 5% of all purchases made through your shop. The protocol will launch with two official Donut Shops:</p>
+                <ul class="list-disc list-inside text-sm pl-4">
+                    <li>Glaze Corp by @heesh</li>
+                    <li>Pinky Glazer by @bigbroc</li>
+                </ul>
+        
+                <h2 class="text-lg font-bold text-tamagotchi-pink-dark">Install Glaze Corp</h2>
+                <p class="text-sm">Add this Mini App to your Farcaster profile for quick access and notifications about glaze activity.</p>
             </div>
             <h3 class="text-xl font-bold text-tamagotchi-pink-dark pt-2">Global Donut Stats</h3>
             <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-4 space-y-3 text-tamagotchi-dark">

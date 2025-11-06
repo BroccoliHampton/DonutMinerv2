@@ -52,6 +52,7 @@ export function cacheDOMElements() {
             blazeClaimAmount: document.getElementById('blaze-claim-amount'),
         },
         profileName: document.getElementById('player-profile-name'),
+        connectWalletButton: document.getElementById('connect-wallet-button'),
         musicToggleButton: document.getElementById('music-toggle-button'),
         sfxToggleButton: document.getElementById('sfx-toggle-button'),
         darkModeToggleButton: document.getElementById('dark-mode-toggle-button'),

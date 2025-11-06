@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Wire up all event listeners
     
+    // Wallet connection button (MetaMask)
+    dom.connectWalletButton.onclick = Blockchain.handleConnectWallet;
+    
     // Blockchain buttons
     dom.glazery.actionButton.onclick = Blockchain.handleGlazeClick;
     dom.glazery.blazeActionButton.onclick = Blockchain.handleBlazeClick;

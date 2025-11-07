@@ -217,11 +217,6 @@ export async function getAddress() {
         return null;
     }
 }
-    } catch (error) {
-        console.error('[WalletProvider] Failed to get address:', error);
-        return null;
-    }
-}
 
 /**
  * Get the Farcaster user context (FID, username, etc.)

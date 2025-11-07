@@ -56,49 +56,55 @@ function isMetaMaskAvailable() {
 export async function initializeWallet() {
     console.log('[WalletProvider] Initializing...');
     
-    // Check if we're likely in a browser with MetaMask (not in Farcaster frame)
-    const probablyBrowser = !isFarcasterEnvironment() && isMetaMaskAvailable();
+    // Check for MetaMask availability first (for fallback)
+    const hasMetaMask = isMetaMaskAvailable();
     
-    if (probablyBrowser) {
-        // Desktop browser with MetaMask - use it directly
-        console.log('[WalletProvider] Detected browser with MetaMask, using it directly');
+    if (hasMetaMask) {
         ethereumProvider = window.ethereum;
         currentWalletType = WALLET_TYPES.METAMASK;
-        return { type: WALLET_TYPES.METAMASK, success: true, needsConnection: true };
+        console.log('[WalletProvider] MetaMask available');
     }
     
-    // Try Farcaster SDK (for Farcaster frames or when MetaMask not detected)
-    try {
-        console.log('[WalletProvider] Attempting Farcaster SDK initialization...');
-        
-        // Add timeout to prevent hanging
-        const farcasterInitPromise = Promise.race([
-            (async () => {
-                await FarcasterSDK.actions.ready();
-                const provider = await FarcasterSDK.wallet.getEthereumProvider();
-                return provider;
-            })(),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Farcaster SDK timeout')), 3000)
-            )
-        ]);
-        
-        ethereumProvider = await farcasterInitPromise;
-        
-        if (ethereumProvider) {
-            currentWalletType = WALLET_TYPES.FARCASTER;
-            console.log('[WalletProvider] Farcaster wallet initialized successfully');
-            return { type: WALLET_TYPES.FARCASTER, success: true };
+    // Try Farcaster SDK in parallel (non-blocking)
+    // This will succeed if in Farcaster frame, fail silently otherwise
+    const tryFarcaster = async () => {
+        try {
+            console.log('[WalletProvider] Attempting Farcaster SDK initialization...');
+            
+            const farcasterInitPromise = Promise.race([
+                (async () => {
+                    await FarcasterSDK.actions.ready();
+                    const provider = await FarcasterSDK.wallet.getEthereumProvider();
+                    return provider;
+                })(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Farcaster SDK timeout')), 2000)
+                )
+            ]);
+            
+            const farcasterProvider = await farcasterInitPromise;
+            
+            if (farcasterProvider) {
+                // Farcaster succeeded! Override MetaMask
+                ethereumProvider = farcasterProvider;
+                currentWalletType = WALLET_TYPES.FARCASTER;
+                console.log('[WalletProvider] Farcaster wallet initialized successfully');
+                return true;
+            }
+        } catch (error) {
+            console.log('[WalletProvider] Farcaster not available:', error.message);
         }
-    } catch (error) {
-        console.log('[WalletProvider] Farcaster init failed or timed out:', error.message);
+        return false;
+    };
+    
+    // Try Farcaster
+    const farcasterSuccess = await tryFarcaster();
+    
+    if (farcasterSuccess) {
+        return { type: WALLET_TYPES.FARCASTER, success: true, autoConnected: true };
     }
     
-    // Final fallback to MetaMask if we haven't already tried it
-    if (isMetaMaskAvailable()) {
-        console.log('[WalletProvider] Falling back to MetaMask');
-        ethereumProvider = window.ethereum;
-        currentWalletType = WALLET_TYPES.METAMASK;
+    if (hasMetaMask) {
         return { type: WALLET_TYPES.METAMASK, success: true, needsConnection: true };
     }
     

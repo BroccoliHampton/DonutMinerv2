@@ -2,6 +2,10 @@
 // This file holds the shared "source of truth" for the application.
 // Other modules will import this to read or write data.
 
+// LP Token URL - Update this when you have it
+// Example: 'https://app.uniswap.org/explore/pools/base/0xc3b9bd6f7d4bfcc22696a7bc1cc83948a33d7fab'
+export const LP_TOKEN_URL = '';
+
 export let blockchainData = {
     currentMiner: null,
     price: '0',

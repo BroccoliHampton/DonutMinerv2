@@ -166,33 +166,57 @@ export async function getAddress() {
         return null;
     }
     
+    // Check if provider has request method
+    if (typeof ethereumProvider.request !== 'function') {
+        console.log('[WalletProvider] Provider does not have request method');
+        return null;
+    }
+    
     try {
         // For Farcaster, get the address
         if (currentWalletType === WALLET_TYPES.FARCASTER) {
             const accounts = await ethereumProvider.request({ 
                 method: 'eth_requestAccounts' 
             });
-            currentAddress = accounts[0];
-            console.log('[WalletProvider] Farcaster address:', currentAddress);
-            return currentAddress;
+            if (accounts && accounts.length > 0) {
+                currentAddress = accounts[0];
+                console.log('[WalletProvider] Farcaster address:', currentAddress);
+                return currentAddress;
+            }
         }
         
-        // For MetaMask, return cached address (already connected via connectMetaMask)
+        // For MetaMask, return cached address or try to get it
         if (currentWalletType === WALLET_TYPES.METAMASK) {
-            if (!currentAddress) {
-                // Try to get accounts without prompting
+            if (currentAddress) {
+                // Already have cached address
+                return currentAddress;
+            }
+            
+            // Try to get accounts without prompting (eth_accounts doesn't trigger popup)
+            try {
                 const accounts = await ethereumProvider.request({ 
                     method: 'eth_accounts' 
                 });
                 if (accounts && accounts.length > 0) {
                     currentAddress = accounts[0];
+                    console.log('[WalletProvider] MetaMask address (cached):', currentAddress);
+                    return currentAddress;
                 }
+            } catch (err) {
+                console.log('[WalletProvider] Could not get MetaMask accounts:', err.message);
             }
-            console.log('[WalletProvider] MetaMask address:', currentAddress);
-            return currentAddress;
+            
+            // No cached address, user needs to connect manually
+            console.log('[WalletProvider] MetaMask not connected yet');
+            return null;
         }
         
         return null;
+    } catch (error) {
+        console.error('[WalletProvider] Failed to get address:', error);
+        return null;
+    }
+}
     } catch (error) {
         console.error('[WalletProvider] Failed to get address:', error);
         return null;

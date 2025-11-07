@@ -4,13 +4,12 @@ import * as UI from './ui.js';
 import * as Scene from './scene.js';
 import * as WalletProvider from './walletProvider.js';
 
-// =================================================================
-// CONFIGURATION
-// =================================================================
 const API_BASE_URL = 'https://last-game-kappa.vercel.app';
 const REFRESH_INTERVAL = 10000;
-const MULTICALL_ADDRESS = '0xe03a89eb8b75d73Caf762a81dA260106fD42F18A';
-const LP_TOKEN_ADDRESS = '0xc3b9bd6f7d4bfcc22696a7bc1cc83948a33d7fab';
+
+// LP Token URL - Update this when you have the URL
+// Example: 'https://app.uniswap.org/explore/pools/base/0xc3b9bd6f7d4bfcc22696a7bc1cc83948a33d7fab'
+const LP_TOKEN_URL = '';
 
 // Caching the DOM object when the app initializes
 let dom;

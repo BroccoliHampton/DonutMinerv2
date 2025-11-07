@@ -168,7 +168,12 @@ export function updateUI(dom) {
 
     dom.glazery.donutBalance.textContent = `🍩 ${formatNumber(State.blockchainData.userDonutBalanceFormatted || 0)}`;
     dom.glazery.totalSupply.textContent = `🍩 ${formatNumber(State.blockchainData.totalDonutSupplyFormatted || 0)}`;
-    dom.glazery.currentDps.textContent = parseFloat(State.blockchainData.currentDpsFormatted || 0).toFixed(2);
+    
+    // Calculate percentage mined (user balance / total supply)
+    const userBalance = parseFloat(State.blockchainData.userDonutBalanceFormatted || 0);
+    const totalSupply = parseFloat(State.blockchainData.totalDonutSupplyFormatted || 0);
+    const percentageMined = totalSupply > 0 ? (userBalance / totalSupply) : 0;
+    dom.glazery.currentDps.textContent = `${percentageMined.toFixed(4)}%`;
     
     dom.glazery.actionButton.textContent = 'Glaze';
     

@@ -74,21 +74,33 @@ async function getUserAddress() {
                 dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)}${walletLabel}`;
             }
             
+            // Hide connect button since we're connected
+            if (dom.connectWalletButton) {
+                dom.connectWalletButton.classList.add('hidden');
+            }
+            
             return address;
         }
         
-        // If no address, check if we need manual connection
-        if (WalletProvider.needsManualConnection()) {
-            console.log('[Blockchain] Wallet needs manual connection');
+        // No address yet - check if we can connect
+        const walletType = WalletProvider.getWalletType();
+        
+        if (walletType === 'metamask') {
+            // MetaMask available but not connected - show connect button
+            console.log('[Blockchain] MetaMask available, showing connect button');
             if (dom.profileName) {
-                dom.profileName.textContent = 'Connect Wallet';
+                dom.profileName.textContent = 'Not Connected';
             }
             if (dom.connectWalletButton) {
                 dom.connectWalletButton.classList.remove('hidden');
             }
-        } else {
+        } else if (walletType === 'none') {
+            // No wallet detected at all
             if (dom.profileName) {
                 dom.profileName.textContent = 'No Wallet';
+            }
+            if (dom.connectWalletButton) {
+                dom.connectWalletButton.classList.add('hidden');
             }
         }
         
@@ -336,29 +348,56 @@ export async function initApp(domElements) {
 }
 
 /**
- * Public handler for connecting MetaMask wallet (browser mode only)
+ * Public handler for connecting wallet (browser mode or Farcaster fallback)
  */
 export async function handleConnectWallet() {
     console.log('[Blockchain] Connect wallet clicked');
     
     try {
-        const address = await WalletProvider.connectMetaMask();
+        const walletType = WalletProvider.getWalletType();
         
-        if (address) {
-            State.blockchainData.userAddress = address;
+        if (walletType === 'metamask') {
+            // Connect MetaMask
+            const address = await WalletProvider.connectMetaMask();
             
-            // Update UI
-            if (dom.profileName) {
-                dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)} 🦊`;
+            if (address) {
+                State.blockchainData.userAddress = address;
+                
+                // Update UI
+                if (dom.profileName) {
+                    dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)} 🦊`;
+                }
+                if (dom.connectWalletButton) {
+                    dom.connectWalletButton.classList.add('hidden');
+                }
+                
+                // Fetch game state with new address
+                await fetchGameState(address);
+                
+                console.log('[Blockchain] Wallet connected successfully');
             }
-            if (dom.connectWalletButton) {
-                dom.connectWalletButton.classList.add('hidden');
+        } else if (walletType === 'farcaster') {
+            // Farcaster should auto-connect, but try to get address anyway
+            const address = await WalletProvider.getAddress();
+            
+            if (address) {
+                State.blockchainData.userAddress = address;
+                
+                // Update UI
+                if (dom.profileName) {
+                    dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
+                }
+                if (dom.connectWalletButton) {
+                    dom.connectWalletButton.classList.add('hidden');
+                }
+                
+                // Fetch game state with new address
+                await fetchGameState(address);
+                
+                console.log('[Blockchain] Farcaster wallet connected');
             }
-            
-            // Fetch game state with new address
-            await fetchGameState(address);
-            
-            console.log('[Blockchain] Wallet connected successfully');
+        } else {
+            alert('No wallet detected. Please install MetaMask or open in Farcaster.');
         }
     } catch (error) {
         console.error('[Blockchain] Failed to connect wallet:', error);

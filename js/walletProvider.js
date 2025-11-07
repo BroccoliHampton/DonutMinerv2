@@ -1,305 +1,135 @@
 // js/walletProvider.js
-// Unified wallet provider that supports both Farcaster SDK and MetaMask
+// Simplified wallet provider
 
 import FarcasterSDK from 'https://esm.sh/@farcaster/miniapp-sdk';
 
-// Wallet types
-const WALLET_TYPES = {
-    FARCASTER: 'farcaster',
-    METAMASK: 'metamask',
-    NONE: 'none'
-};
-
-// Private state
-let currentWalletType = WALLET_TYPES.NONE;
-let ethereumProvider = null;
-let currentAddress = null;
+let provider = null;
+let userAddress = null;
+let walletType = 'none'; // 'farcaster', 'metamask', or 'none'
 
 /**
- * Detects if we're running inside Farcaster
- */
-function isFarcasterEnvironment() {
-    // Check for Farcaster-specific indicators
-    if (typeof window === 'undefined') return false;
-    
-    // Check multiple Farcaster indicators
-    const isInIframe = window.location !== window.parent.location;
-    const hasFarcasterUA = navigator.userAgent.includes('Farcaster');
-    const hasFarcasterName = window.name === 'farcaster';
-    
-    // Check if the SDK is available (more reliable)
-    const hasFarcasterSDK = typeof FarcasterSDK !== 'undefined';
-    
-    console.log('[WalletProvider] Environment checks:', {
-        isInIframe,
-        hasFarcasterUA,
-        hasFarcasterName,
-        hasFarcasterSDK
-    });
-    
-    // If any Farcaster indicator is present, try Farcaster first
-    return isInIframe || hasFarcasterUA || hasFarcasterName || hasFarcasterSDK;
-}
-
-/**
- * Checks if MetaMask is available
- */
-function isMetaMaskAvailable() {
-    return typeof window !== 'undefined' && 
-           typeof window.ethereum !== 'undefined' && 
-           window.ethereum.isMetaMask;
-}
-
-/**
- * Initialize the appropriate wallet based on environment
+ * Initialize wallet - try Farcaster, fall back to showing connect button for MetaMask
  */
 export async function initializeWallet() {
-    console.log('[WalletProvider] Initializing...');
+    console.log('[Wallet] Initializing...');
     
-    // Check for MetaMask availability first (for fallback)
-    const hasMetaMask = isMetaMaskAvailable();
-    console.log('[WalletProvider] MetaMask available:', hasMetaMask);
-    
-    // Try Farcaster SDK with very short timeout (500ms)
-    // If we're in Farcaster, it should respond quickly
-    // If we're in browser, it will timeout fast and we use MetaMask
+    // Try Farcaster first (for frames)
     try {
-        console.log('[WalletProvider] Attempting Farcaster SDK (500ms timeout)...');
+        await FarcasterSDK.actions.ready({ timeout: 1000 });
+        provider = await FarcasterSDK.wallet.getEthereumProvider();
         
-        const farcasterInitPromise = Promise.race([
-            (async () => {
-                await FarcasterSDK.actions.ready();
-                const provider = await FarcasterSDK.wallet.getEthereumProvider();
-                if (!provider) throw new Error('No provider from SDK');
-                return provider;
-            })(),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Farcaster timeout')), 500)
-            )
-        ]);
-        
-        const farcasterProvider = await farcasterInitPromise;
-        
-        // Farcaster succeeded!
-        ethereumProvider = farcasterProvider;
-        currentWalletType = WALLET_TYPES.FARCASTER;
-        console.log('[WalletProvider] Farcaster wallet initialized successfully');
-        
-        // Cache the address immediately
-        try {
-            const accounts = await ethereumProvider.request({ method: 'eth_requestAccounts' });
-            if (accounts && accounts.length > 0) {
-                currentAddress = accounts[0];
-                console.log('[WalletProvider] Farcaster address cached:', currentAddress);
+        if (provider) {
+            walletType = 'farcaster';
+            console.log('[Wallet] Farcaster detected');
+            
+            // Get address automatically
+            const accounts = await provider.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts[0]) {
+                userAddress = accounts[0];
+                console.log('[Wallet] Farcaster connected:', userAddress);
+                return { type: 'farcaster', address: userAddress, connected: true };
             }
-        } catch (err) {
-            console.log('[WalletProvider] Could not cache Farcaster address:', err.message);
         }
-        
-        return { type: WALLET_TYPES.FARCASTER, success: true, autoConnected: true };
-        
-    } catch (error) {
-        console.log('[WalletProvider] Farcaster not available (expected in browser):', error.message);
+    } catch (err) {
+        console.log('[Wallet] Farcaster not available:', err.message);
     }
     
-    // Farcaster failed or timed out - use MetaMask
-    if (hasMetaMask) {
-        ethereumProvider = window.ethereum;
-        currentWalletType = WALLET_TYPES.METAMASK;
-        console.log('[WalletProvider] Using MetaMask');
-        return { type: WALLET_TYPES.METAMASK, success: true, needsConnection: true };
+    // Check for MetaMask
+    if (window.ethereum) {
+        provider = window.ethereum;
+        walletType = 'metamask';
+        console.log('[Wallet] MetaMask available, waiting for user to connect');
+        return { type: 'metamask', address: null, connected: false };
     }
     
-    console.log('[WalletProvider] No wallet available');
-    return { type: WALLET_TYPES.NONE, success: false };
+    console.log('[Wallet] No wallet found');
+    return { type: 'none', address: null, connected: false };
 }
 
 /**
- * Connect to MetaMask (only needed for browser mode)
+ * Connect MetaMask (called when user clicks button)
  */
-export async function connectMetaMask() {
-    if (currentWalletType !== WALLET_TYPES.METAMASK) {
-        throw new Error('MetaMask not available');
+export async function connectWallet() {
+    console.log('[Wallet] Connect button clicked');
+    
+    if (!provider) {
+        if (window.ethereum) {
+            provider = window.ethereum;
+            walletType = 'metamask';
+        } else {
+            throw new Error('No wallet available');
+        }
     }
     
     try {
-        console.log('[WalletProvider] Requesting MetaMask connection...');
-        const accounts = await ethereumProvider.request({ 
-            method: 'eth_requestAccounts' 
-        });
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
         
-        if (accounts && accounts.length > 0) {
-            currentAddress = accounts[0];
-            console.log('[WalletProvider] MetaMask connected:', currentAddress);
+        if (accounts && accounts[0]) {
+            userAddress = accounts[0];
+            console.log('[Wallet] Connected:', userAddress);
             
             // Listen for account changes
-            ethereumProvider.on('accountsChanged', (accounts) => {
-                if (accounts.length > 0) {
-                    currentAddress = accounts[0];
-                    console.log('[WalletProvider] Account changed:', currentAddress);
-                    // Trigger a page reload to refresh game state
+            provider.on('accountsChanged', (accounts) => {
+                if (accounts[0]) {
+                    console.log('[Wallet] Account changed, reloading...');
                     window.location.reload();
-                } else {
-                    currentAddress = null;
-                    console.log('[WalletProvider] MetaMask disconnected');
                 }
             });
             
-            // Listen for chain changes
-            ethereumProvider.on('chainChanged', () => {
-                console.log('[WalletProvider] Chain changed, reloading...');
+            // Listen for network changes
+            provider.on('chainChanged', () => {
+                console.log('[Wallet] Network changed, reloading...');
                 window.location.reload();
             });
             
-            return currentAddress;
+            return userAddress;
         }
     } catch (error) {
-        console.error('[WalletProvider] MetaMask connection failed:', error);
+        console.error('[Wallet] Connection failed:', error);
         throw error;
     }
 }
 
 /**
- * Get the user's wallet address
+ * Get current address
  */
-export async function getAddress() {
-    if (!ethereumProvider) {
-        console.log('[WalletProvider] No provider available');
-        return null;
-    }
-    
-    // Check if provider has request method
-    if (typeof ethereumProvider.request !== 'function') {
-        console.log('[WalletProvider] Provider does not have request method');
-        return null;
-    }
-    
-    try {
-        // For Farcaster, check cached address first
-        if (currentWalletType === WALLET_TYPES.FARCASTER) {
-            if (currentAddress) {
-                console.log('[WalletProvider] Returning cached Farcaster address:', currentAddress);
-                return currentAddress;
-            }
-            
-            // Try to get address if not cached
-            try {
-                const accounts = await ethereumProvider.request({ 
-                    method: 'eth_requestAccounts' 
-                });
-                if (accounts && accounts.length > 0) {
-                    currentAddress = accounts[0];
-                    console.log('[WalletProvider] Farcaster address:', currentAddress);
-                    return currentAddress;
-                }
-            } catch (err) {
-                console.error('[WalletProvider] Failed to get Farcaster address:', err.message);
-                return null;
-            }
-        }
-        
-        // For MetaMask, return cached address or try to get it
-        if (currentWalletType === WALLET_TYPES.METAMASK) {
-            if (currentAddress) {
-                // Already have cached address
-                return currentAddress;
-            }
-            
-            // Try to get accounts without prompting (eth_accounts doesn't trigger popup)
-            try {
-                const accounts = await ethereumProvider.request({ 
-                    method: 'eth_accounts' 
-                });
-                if (accounts && accounts.length > 0) {
-                    currentAddress = accounts[0];
-                    console.log('[WalletProvider] MetaMask address (cached):', currentAddress);
-                    return currentAddress;
-                }
-            } catch (err) {
-                console.log('[WalletProvider] Could not get MetaMask accounts:', err.message);
-            }
-            
-            // No cached address, user needs to connect manually
-            console.log('[WalletProvider] MetaMask not connected yet');
-            return null;
-        }
-        
-        return null;
-    } catch (error) {
-        console.error('[WalletProvider] Failed to get address:', error);
-        return null;
-    }
+export function getAddress() {
+    return userAddress;
 }
 
 /**
- * Get the Farcaster user context (FID, username, etc.)
+ * Get wallet type
  */
-export async function getFarcasterContext() {
-    if (currentWalletType !== WALLET_TYPES.FARCASTER) {
-        return null;
-    }
-    
-    try {
-        const context = await FarcasterSDK.context;
-        return context;
-    } catch (error) {
-        console.log('[WalletProvider] Could not get Farcaster context:', error.message);
-        return null;
-    }
+export function getWalletType() {
+    return walletType;
 }
 
 /**
  * Send a transaction
  */
 export async function sendTransaction(txParams) {
-    if (!ethereumProvider) {
-        throw new Error('No wallet provider available');
+    if (!provider) {
+        throw new Error('No wallet connected');
     }
     
-    if (!currentAddress) {
-        throw new Error('Wallet not connected');
-    }
+    const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [txParams]
+    });
     
-    try {
-        console.log('[WalletProvider] Sending transaction via', currentWalletType);
-        
-        const txHash = await ethereumProvider.request({
-            method: 'eth_sendTransaction',
-            params: [txParams]
-        });
-        
-        console.log('[WalletProvider] Transaction sent:', txHash);
-        return txHash;
-    } catch (error) {
-        console.error('[WalletProvider] Transaction failed:', error);
-        throw error;
+    return txHash;
+}
+
+/**
+ * Get Farcaster context if available
+ */
+export async function getFarcasterContext() {
+    if (walletType === 'farcaster') {
+        try {
+            return await FarcasterSDK.context;
+        } catch (err) {
+            return null;
+        }
     }
-}
-
-/**
- * Get the current wallet type
- */
-export function getWalletType() {
-    return currentWalletType;
-}
-
-/**
- * Check if wallet is connected
- */
-export function isConnected() {
-    return currentAddress !== null;
-}
-
-/**
- * Get the current provider
- */
-export function getProvider() {
-    return ethereumProvider;
-}
-
-/**
- * Check if we need to show connect button (browser mode only)
- */
-export function needsManualConnection() {
-    return currentWalletType === WALLET_TYPES.METAMASK && !currentAddress;
+    return null;
 }

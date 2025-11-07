@@ -58,53 +58,55 @@ export async function initializeWallet() {
     
     // Check for MetaMask availability first (for fallback)
     const hasMetaMask = isMetaMaskAvailable();
+    console.log('[WalletProvider] MetaMask available:', hasMetaMask);
     
+    // Try Farcaster SDK with very short timeout (500ms)
+    // If we're in Farcaster, it should respond quickly
+    // If we're in browser, it will timeout fast and we use MetaMask
+    try {
+        console.log('[WalletProvider] Attempting Farcaster SDK (500ms timeout)...');
+        
+        const farcasterInitPromise = Promise.race([
+            (async () => {
+                await FarcasterSDK.actions.ready();
+                const provider = await FarcasterSDK.wallet.getEthereumProvider();
+                if (!provider) throw new Error('No provider from SDK');
+                return provider;
+            })(),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Farcaster timeout')), 500)
+            )
+        ]);
+        
+        const farcasterProvider = await farcasterInitPromise;
+        
+        // Farcaster succeeded!
+        ethereumProvider = farcasterProvider;
+        currentWalletType = WALLET_TYPES.FARCASTER;
+        console.log('[WalletProvider] Farcaster wallet initialized successfully');
+        
+        // Cache the address immediately
+        try {
+            const accounts = await ethereumProvider.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts.length > 0) {
+                currentAddress = accounts[0];
+                console.log('[WalletProvider] Farcaster address cached:', currentAddress);
+            }
+        } catch (err) {
+            console.log('[WalletProvider] Could not cache Farcaster address:', err.message);
+        }
+        
+        return { type: WALLET_TYPES.FARCASTER, success: true, autoConnected: true };
+        
+    } catch (error) {
+        console.log('[WalletProvider] Farcaster not available (expected in browser):', error.message);
+    }
+    
+    // Farcaster failed or timed out - use MetaMask
     if (hasMetaMask) {
         ethereumProvider = window.ethereum;
         currentWalletType = WALLET_TYPES.METAMASK;
-        console.log('[WalletProvider] MetaMask available');
-    }
-    
-    // Try Farcaster SDK in parallel (non-blocking)
-    // This will succeed if in Farcaster frame, fail silently otherwise
-    const tryFarcaster = async () => {
-        try {
-            console.log('[WalletProvider] Attempting Farcaster SDK initialization...');
-            
-            const farcasterInitPromise = Promise.race([
-                (async () => {
-                    await FarcasterSDK.actions.ready();
-                    const provider = await FarcasterSDK.wallet.getEthereumProvider();
-                    return provider;
-                })(),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Farcaster SDK timeout')), 2000)
-                )
-            ]);
-            
-            const farcasterProvider = await farcasterInitPromise;
-            
-            if (farcasterProvider) {
-                // Farcaster succeeded! Override MetaMask
-                ethereumProvider = farcasterProvider;
-                currentWalletType = WALLET_TYPES.FARCASTER;
-                console.log('[WalletProvider] Farcaster wallet initialized successfully');
-                return true;
-            }
-        } catch (error) {
-            console.log('[WalletProvider] Farcaster not available:', error.message);
-        }
-        return false;
-    };
-    
-    // Try Farcaster
-    const farcasterSuccess = await tryFarcaster();
-    
-    if (farcasterSuccess) {
-        return { type: WALLET_TYPES.FARCASTER, success: true, autoConnected: true };
-    }
-    
-    if (hasMetaMask) {
+        console.log('[WalletProvider] Using MetaMask');
         return { type: WALLET_TYPES.METAMASK, success: true, needsConnection: true };
     }
     
@@ -173,15 +175,26 @@ export async function getAddress() {
     }
     
     try {
-        // For Farcaster, get the address
+        // For Farcaster, check cached address first
         if (currentWalletType === WALLET_TYPES.FARCASTER) {
-            const accounts = await ethereumProvider.request({ 
-                method: 'eth_requestAccounts' 
-            });
-            if (accounts && accounts.length > 0) {
-                currentAddress = accounts[0];
-                console.log('[WalletProvider] Farcaster address:', currentAddress);
+            if (currentAddress) {
+                console.log('[WalletProvider] Returning cached Farcaster address:', currentAddress);
                 return currentAddress;
+            }
+            
+            // Try to get address if not cached
+            try {
+                const accounts = await ethereumProvider.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                if (accounts && accounts.length > 0) {
+                    currentAddress = accounts[0];
+                    console.log('[WalletProvider] Farcaster address:', currentAddress);
+                    return currentAddress;
+                }
+            } catch (err) {
+                console.error('[WalletProvider] Failed to get Farcaster address:', err.message);
+                return null;
             }
         }
         

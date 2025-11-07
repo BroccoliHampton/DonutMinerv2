@@ -19,9 +19,6 @@ let dom;
 // PRIVATE HELPERS
 // =================================================================
 
-/**
- * Sends a transaction with retry logic.
- */
 async function sendTxWithRetry(txParams, maxAttempts = 3, delay = 500) {
     for (let i = 0; i < maxAttempts; i++) {
         try {
@@ -44,73 +41,6 @@ async function sendTxWithRetry(txParams, maxAttempts = 3, delay = 500) {
                 throw error;
             }
         }
-    }
-}
-
-/**
- * Gets the user's wallet address from the wallet provider.
- */
-async function getUserAddress() {
-    try {
-        console.log('[Blockchain] Getting user address...');
-        
-        const address = await WalletProvider.getAddress();
-        
-        if (address) {
-            State.blockchainData.userAddress = address;
-            console.log('[Blockchain] User address:', address);
-            
-            // Try to get Farcaster context if available
-            const farcasterContext = await WalletProvider.getFarcasterContext();
-            if (farcasterContext && farcasterContext.user) {
-                State.blockchainData.fid = farcasterContext.user.fid;
-                console.log('[Blockchain] FID:', State.blockchainData.fid);
-            }
-            
-            // Update profile name display
-            if (dom.profileName) {
-                const walletType = WalletProvider.getWalletType();
-                const walletLabel = walletType === 'metamask' ? ' 🦊' : '';
-                dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)}${walletLabel}`;
-            }
-            
-            // Hide connect button since we're connected
-            if (dom.connectWalletButton) {
-                dom.connectWalletButton.classList.add('hidden');
-            }
-            
-            return address;
-        }
-        
-        // No address yet - check if we can connect
-        const walletType = WalletProvider.getWalletType();
-        
-        if (walletType === 'metamask') {
-            // MetaMask available but not connected - show connect button
-            console.log('[Blockchain] MetaMask available, showing connect button');
-            if (dom.profileName) {
-                dom.profileName.textContent = 'Not Connected';
-            }
-            if (dom.connectWalletButton) {
-                dom.connectWalletButton.classList.remove('hidden');
-            }
-        } else if (walletType === 'none') {
-            // No wallet detected at all
-            if (dom.profileName) {
-                dom.profileName.textContent = 'No Wallet';
-            }
-            if (dom.connectWalletButton) {
-                dom.connectWalletButton.classList.add('hidden');
-            }
-        }
-        
-        return null;
-    } catch (error) {
-        console.log('[Blockchain] Could not get address:', error.message);
-        if (dom.profileName) {
-            dom.profileName.textContent = 'Error';
-        }
-        return null;
     }
 }
 
@@ -326,17 +256,44 @@ async function sendBuyTransaction(address) {
  */
 export async function initApp(domElements) {
     console.log('[Init] Starting application...');
-    dom = domElements; // Cache the DOM for other functions in this module
+    dom = domElements;
     
-    // Initialize wallet provider
-    const walletInit = await WalletProvider.initializeWallet();
-    console.log('[Init] Wallet initialization result:', walletInit);
+    // Initialize wallet
+    const result = await WalletProvider.initializeWallet();
+    console.log('[Init] Wallet init:', result);
     
-    // Get user address (will show connect button if needed)
-    const userAddress = await getUserAddress();
-    
-    // Fetch initial game state
-    await fetchGameState(userAddress);
+    if (result.connected) {
+        // Farcaster auto-connected
+        State.blockchainData.userAddress = result.address;
+        
+        // Update UI
+        const walletLabel = result.type === 'farcaster' ? '' : ' 🦊';
+        dom.profileName.textContent = `${result.address.slice(0, 6)}...${result.address.slice(-4)}${walletLabel}`;
+        dom.connectWalletButton.classList.add('hidden');
+        
+        // Get Farcaster context if available
+        const context = await WalletProvider.getFarcasterContext();
+        if (context && context.user) {
+            State.blockchainData.fid = context.user.fid;
+        }
+        
+        // Fetch game state
+        await fetchGameState(result.address);
+    } else if (result.type === 'metamask') {
+        // MetaMask available but not connected - show button
+        dom.profileName.textContent = 'Not Connected';
+        dom.connectWalletButton.classList.remove('hidden');
+        
+        // Fetch game state without address
+        await fetchGameState(null);
+    } else {
+        // No wallet
+        dom.profileName.textContent = 'No Wallet';
+        dom.connectWalletButton.classList.add('hidden');
+        
+        // Fetch game state without address
+        await fetchGameState(null);
+    }
     
     // Set up auto-refresh
     setInterval(() => {
@@ -347,61 +304,27 @@ export async function initApp(domElements) {
     console.log('[Init] Application complete!');
 }
 
-/**
- * Public handler for connecting wallet (browser mode or Farcaster fallback)
- */
 export async function handleConnectWallet() {
     console.log('[Blockchain] Connect wallet clicked');
     
     try {
-        const walletType = WalletProvider.getWalletType();
+        const address = await WalletProvider.connectWallet();
         
-        if (walletType === 'metamask') {
-            // Connect MetaMask
-            const address = await WalletProvider.connectMetaMask();
+        if (address) {
+            State.blockchainData.userAddress = address;
             
-            if (address) {
-                State.blockchainData.userAddress = address;
-                
-                // Update UI
-                if (dom.profileName) {
-                    dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)} 🦊`;
-                }
-                if (dom.connectWalletButton) {
-                    dom.connectWalletButton.classList.add('hidden');
-                }
-                
-                // Fetch game state with new address
-                await fetchGameState(address);
-                
-                console.log('[Blockchain] Wallet connected successfully');
-            }
-        } else if (walletType === 'farcaster') {
-            // Farcaster should auto-connect, but try to get address anyway
-            const address = await WalletProvider.getAddress();
+            // Update UI
+            dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)} 🦊`;
+            dom.connectWalletButton.classList.add('hidden');
             
-            if (address) {
-                State.blockchainData.userAddress = address;
-                
-                // Update UI
-                if (dom.profileName) {
-                    dom.profileName.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
-                }
-                if (dom.connectWalletButton) {
-                    dom.connectWalletButton.classList.add('hidden');
-                }
-                
-                // Fetch game state with new address
-                await fetchGameState(address);
-                
-                console.log('[Blockchain] Farcaster wallet connected');
-            }
-        } else {
-            alert('No wallet detected. Please install MetaMask or open in Farcaster.');
+            // Fetch game state
+            await fetchGameState(address);
+            
+            console.log('[Blockchain] Wallet connected successfully');
         }
     } catch (error) {
-        console.error('[Blockchain] Failed to connect wallet:', error);
-        alert('Failed to connect wallet. Please make sure MetaMask is installed and try again.');
+        console.error('[Blockchain] Failed to connect:', error);
+        alert('Failed to connect wallet. Please try again.');
     }
 }
 

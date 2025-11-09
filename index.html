@@ -39,10 +39,13 @@
             <div class="flex flex-col">
                 <h1 class="text-3xl font-black text-tamagotchi-pink-dark" style="font-family: 'Luckiest Guy', cursive;">Pinky Glazers</h1>
                 
-                <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-2 flex items-center space-x-3 mt-1">
+                <div class="bg-tamagotchi-card rounded-tamagotchi-lg shadow-tamagotchi p-2 flex items-center space-x-2 mt-1">
                     <div class="flex-1">
                         <div id="player-profile-name" class="font-extrabold text-sm truncate text-tamagotchi-dark">Loading...</div>
                     </div>
+                    <button id="share-button" class="bg-tamagotchi-button-teal text-white py-1 px-2 rounded-tamagotchi-md text-xs font-bold active:opacity-80 shadow-tamagotchi whitespace-nowrap">
+                        📢 Share
+                    </button>
                     <button id="connect-wallet-button" class="bg-tamagotchi-button-pink text-white py-1 px-3 rounded-tamagotchi-md text-xs font-bold active:opacity-80 shadow-tamagotchi whitespace-nowrap">
                         Connect
                     </button>
@@ -113,16 +116,16 @@
                                 <button id="bakery-action-button" class="bg-tamagotchi-button-pink text-white py-2 px-6 rounded-tamagotchi-md text-sm font-bold active:opacity-80 disabled:opacity-50 shadow-tamagotchi">
                                     Glaze
                                 </button>
-                                <div class="text-right mt-1"> 
-                                    <div class="text-xs font-semibold text-gray-600">Donuts/s</div>
-                                    <div id="glaze-dps-display" class="text-sm font-extrabold text-tamagotchi-dark">0.00</div>
+                                <div class="text-right mt-1">
+                                    <div class="text-xs font-semibold text-gray-600">DPS</div>
+                                    <div id="glaze-dps-display" class="text-sm font-extrabold text-tamagotchi-dark">0</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="blaze-container" class="hidden"> 
+                <div id="blaze-container" class="hidden">
                     <div class="bg-tamagotchi-card text-tamagotchi-dark p-2 rounded-tamagotchi-lg shadow-tamagotchi">
                         <div class="flex justify-between items-center">
                             <div>

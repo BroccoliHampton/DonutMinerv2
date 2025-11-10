@@ -3,8 +3,7 @@
     "header": "eyJmaWQiOjEzNzc5NTMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg4ZWU3ODMyOTIyNzdjNzc5MjAyM2ZGMTkwQ0U5MTY1MTM3NDEwMGRFIn0",
     "payload": "eyJkb21haW4iOiJkb251dC1taW5lcnYyLnZlcmNlbC5hcHAifQ",
     "signature": "eqZqRRfDrmv/jr5MhkI1rxxbG0Ebf7YnHGh+nu1YEdcni4HKiQsllHxKNo8VpzbJyxwT+363Gh6WLUEIZdF5Rxs="
-  }
-}
+  },
   "miniapp": {
     "version": "1",
     "name": "Pinky Glazers Donut Miner",

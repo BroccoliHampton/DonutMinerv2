@@ -9,7 +9,7 @@ const REFRESH_INTERVAL = 10000;
 
 // LP Token URL - Update this when you have the URL
 // Example: 'https://app.uniswap.org/explore/pools/base/0xc3b9bd6f7d4bfcc22696a7bc1cc83948a33d7fab'
-const LP_TOKEN_URL = '';
+const LP_TOKEN_URL = 'https://app.uniswap.org/explore/pools/base/0xD1DbB2E56533C55C3A637D13C53aeEf65c5D5703';
 
 // Caching the DOM object when the app initializes
 let dom;

@@ -1,9 +1,10 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjEzNTAzMzgsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg4ZGE5RTIxMzA3YzFFZEE1RjlEMDYxNGVCODM3RjNFRjhDRDVhNEI1In0",
-    "payload": "eyJkb21haW4iOiJkaWxsaW5nZXItZmluYWwudmVyY2VsLmFwcCJ9",
-    "signature": "MHgyZWRjMjZlYmE5MjZiNzFjYzhjMmIzZGY1MTUwNDE3OTJhNmI0ODQ2NjAzMzU3ZjBlNTczNjViMzBkMTZjZjRkMDc4MDU5NzA3MTQyZDRkNGVmNGIwMDg1OWFmN2I5YmI0NDMyMWQzMTljNDdmMTY4ZTIxN2MzOTY2NjVlOGJjMzFi"
-  },
+    "header": "eyJmaWQiOjEzNzc5NTMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg4ZWU3ODMyOTIyNzdjNzc5MjAyM2ZGMTkwQ0U5MTY1MTM3NDEwMGRFIn0",
+    "payload": "eyJkb21haW4iOiJkb251dC1taW5lcnYyLnZlcmNlbC5hcHAifQ",
+    "signature": "eqZqRRfDrmv/jr5MhkI1rxxbG0Ebf7YnHGh+nu1YEdcni4HKiQsllHxKNo8VpzbJyxwT+363Gh6WLUEIZdF5Rxs="
+  }
+}
   "miniapp": {
     "version": "1",
     "name": "Pinky Glazers Donut Miner",

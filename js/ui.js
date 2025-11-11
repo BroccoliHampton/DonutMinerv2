@@ -1,5 +1,6 @@
 // js/ui.js
 import * as State from './state.js';
+import * as WalletProvider from './walletProvider.js';
 
 // --- Private Helper Functions (only used inside this file) ---
 
@@ -73,21 +74,28 @@ export function cacheDOMElements() {
  * Opens Farcaster composer with pre-filled message and link
  * @param {function} playSoundEffect - The function to call for audio.
  */
-export function handleShareClick(playSoundEffect) {
+export async function handleShareClick(playSoundEffect) {
     playSoundEffect('crunch');
     
     const message = "I'm hand glazing $DONUT at Pinky Glazers Donut Shop!";
     const url = "https://donut-minerv2.vercel.app/";
     
-    // URL encode the text and embed
     const encodedText = encodeURIComponent(message);
     const encodedUrl = encodeURIComponent(url);
-    
-    // Construct Warpcast composer URL
     const warpcastUrl = `https://warpcast.com/~/compose?text=${encodedText}&embeds[]=${encodedUrl}`;
     
-    // Open in new window/tab
-    window.open(warpcastUrl, '_blank');
+    console.log('[Share] Attempting to share via Farcaster SDK...');
+    
+    // Try SDK first (for mobile Farcaster miniapp)
+    const usedSdk = await WalletProvider.openUrl(warpcastUrl);
+    
+    // Fallback to window.open if SDK not available (desktop/browser)
+    if (!usedSdk) {
+        console.log('[Share] SDK not available, opening in new window');
+        window.open(warpcastUrl, '_blank');
+    } else {
+        console.log('[Share] Successfully opened via Farcaster SDK');
+    }
 }
 
 /**

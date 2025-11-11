@@ -133,3 +133,21 @@ export async function getFarcasterContext() {
     }
     return null;
 }
+
+/**
+ * Open URL using Farcaster SDK if available (for share button)
+ */
+export async function openUrl(url) {
+    if (walletType === 'farcaster') {
+        try {
+            console.log('[Wallet] Opening URL via Farcaster SDK:', url);
+            await FarcasterSDK.actions.openUrl(url);
+            return true;
+        } catch (err) {
+            console.error('[Wallet] Failed to open URL via SDK:', err);
+            return false;
+        }
+    }
+    console.log('[Wallet] Not in Farcaster context, returning false');
+    return false;
+}

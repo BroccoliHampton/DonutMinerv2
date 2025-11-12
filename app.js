@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // UI/View buttons
     dom.glazery.toggleButton.onclick = () => UI.toggleView(dom, Audio.playSoundEffect, Scene.getComposer());
-    dom.darkModeToggleButton.onclick = () => UI.toggleDarkMode(dom, Audio.playSoundEffect);
+    dom.darkModeToggleButton.onclick = () => UI.toggleTheme(dom, Audio.playSoundEffect);
 
     // Info Modal buttons
     dom.infoButton.onclick = () => UI.showInfoModal(dom, Audio.playSoundEffect);

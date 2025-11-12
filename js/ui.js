@@ -248,21 +248,32 @@ export function toggleView(dom, playSoundEffect, composer) {
 }
 
 /**
- * Toggles dark mode on and off.
+ * Cycles through three themes: light -> dark -> sproto -> light
  * @param {object} dom - The DOM elements object.
  * @param {function} playSoundEffect - The function to call for audio.
  */
-export function toggleDarkMode(dom, playSoundEffect) {
+export function toggleTheme(dom, playSoundEffect) {
     playSoundEffect('crunch');
-    State.uiState.isDarkMode = !State.uiState.isDarkMode;
     const body = document.body;
-    if (State.uiState.isDarkMode) {
+    
+    // Cycle through: light -> dark -> sproto -> light
+    if (State.uiState.themeMode === 'light') {
+        State.uiState.themeMode = 'dark';
+        body.classList.remove('sproto');
         body.classList.add('dark');
         dom.darkModeToggleButton.textContent = '☀️';
-    } else {
+    } else if (State.uiState.themeMode === 'dark') {
+        State.uiState.themeMode = 'sproto';
         body.classList.remove('dark');
+        body.classList.add('sproto');
+        dom.darkModeToggleButton.textContent = '🎨';
+    } else {
+        State.uiState.themeMode = 'light';
+        body.classList.remove('dark', 'sproto');
         dom.darkModeToggleButton.textContent = '🌙';
     }
+    
+    console.log(`[Theme] Switched to ${State.uiState.themeMode} mode`);
 }
 
 /**
